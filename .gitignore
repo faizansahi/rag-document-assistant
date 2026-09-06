@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.db
+qdrant_data/
+uploads/
+*.pdf
+.idea/
+.vscode/
+.DS_Store

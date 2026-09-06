@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    ports: ["8000:8000"]
+    environment: ["QDRANT_PATH=/data/qdrant", "DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/rag"]
+    depends_on: [db]
+    volumes: ["qdrant_data:/data/qdrant"]
+  db:
+    image: postgres:16-alpine
+    environment: {POSTGRES_DB: rag, POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres}
+volumes: {qdrant_data: {}}
