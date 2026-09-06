@@ -38,6 +38,9 @@ def test_upload_ask_citation_delete_flow():
             and answer["citations"][0]["page"] == 1
         )
         assert api.get("/debug/retrieval?q=helmets").status_code == 200
+        assert (
+            api.post(f"/documents/{uploaded.json()['id']}/reindex").json()["status"] == "reindexed"
+        )
         assert api.delete(f"/documents/{uploaded.json()['id']}").status_code == 204
 
 

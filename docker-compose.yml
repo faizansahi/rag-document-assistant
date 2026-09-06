@@ -2,10 +2,10 @@ services:
   api:
     build: .
     ports: ["8000:8000"]
-    environment: ["QDRANT_PATH=/data/qdrant", "DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/rag"]
+    environment: ["QDRANT_PATH=/data/qdrant", "UPLOAD_DIR=/data/uploads", "DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/rag"]
     depends_on: [db]
-    volumes: ["qdrant_data:/data/qdrant"]
+    volumes: ["qdrant_data:/data/qdrant", "upload_data:/data/uploads"]
   db:
     image: postgres:16-alpine
     environment: {POSTGRES_DB: rag, POSTGRES_USER: postgres, POSTGRES_PASSWORD: postgres}
-volumes: {qdrant_data: {}}
+volumes: {qdrant_data: {}, upload_data: {}}

@@ -11,7 +11,7 @@ flowchart LR
 
 ## Features
 
-- PDF upload, listing, deletion, page preservation, re-index through re-upload
+- PDF upload, listing, deletion, page preservation, and explicit re-indexing
 - Free local embeddings with no API credential requirement
 - Semantic retrieval and `/debug/retrieval` observability
 - Source citations and explicit `Insufficient evidence in the uploaded documents.` fallback

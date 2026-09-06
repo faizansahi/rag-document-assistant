@@ -16,6 +16,7 @@ from .db import DocumentRecord, Session
 COLLECTION = "document_chunks"
 client = QdrantClient(path=os.getenv("QDRANT_PATH", ":memory:"))
 documents: dict[str, dict] = {}
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
 
 
 class AskRequest(BaseModel):
@@ -60,6 +61,9 @@ async def upload_document(file: UploadFile = File(...)):
     if not chunks:
         raise HTTPException(422, "PDF contains no extractable text")
     document_id = str(uuid.uuid4())
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    with open(os.path.join(UPLOAD_DIR, f"{document_id}.pdf"), "wb") as stored:
+        stored.write(content)
     ensure_collection()
     points = []
     for chunk in chunks:
@@ -131,6 +135,54 @@ def delete_document(document_id: str):
         ),
     )
     documents.pop(document_id, None)
+    path = os.path.join(UPLOAD_DIR, f"{document_id}.pdf")
+    if os.path.exists(path):
+        os.remove(path)
+
+
+@app.post("/documents/{document_id}/reindex")
+def reindex_document(document_id: str):
+    with Session() as database:
+        record = database.get(DocumentRecord, document_id)
+        if record is None:
+            raise HTTPException(404, "Document not found")
+        filename = record.filename
+    path = os.path.join(UPLOAD_DIR, f"{document_id}.pdf")
+    if not os.path.exists(path):
+        raise HTTPException(409, "Original PDF is unavailable for re-indexing")
+    pages = [page.extract_text() or "" for page in PdfReader(path).pages]
+    chunks = chunk_pages(pages)
+    client.delete(
+        COLLECTION,
+        points_selector=models.FilterSelector(
+            filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="document_id", match=models.MatchValue(value=document_id)
+                    )
+                ]
+            )
+        ),
+    )
+    client.upsert(
+        COLLECTION,
+        points=[
+            models.PointStruct(
+                id=str(uuid.uuid4()),
+                vector=embed(chunk.text),
+                payload={
+                    "document_id": document_id,
+                    "filename": filename,
+                    "page": chunk.page,
+                    "chunk_index": chunk.index,
+                    "text": chunk.text,
+                },
+            )
+            for chunk in chunks
+        ],
+        wait=True,
+    )
+    return {"id": document_id, "chunks": len(chunks), "status": "reindexed"}
 
 
 def retrieve(question: str, limit: int) -> list[dict]:
