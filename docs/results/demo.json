@@ -1,0 +1,110 @@
+{
+  "question": "When does the safety inspection occur?",
+  "answer": {
+    "answer": "The safety inspection occurs every Monday.",
+    "confidence": "medium",
+    "citations": [
+      {
+        "filename": "manual.pdf",
+        "page": 1,
+        "score": 0.226
+      }
+    ]
+  },
+  "workflow": [
+    {
+      "method": "POST",
+      "path": "/documents",
+      "status": 201,
+      "response": {
+        "id": "514eed39-0c3e-4501-b552-a9497e52745a",
+        "filename": "manual.pdf",
+        "pages": 2,
+        "chunks": 2,
+        "created_at": "2026-09-07T00:41:45.633818+00:00"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/documents",
+      "status": 200,
+      "response": [
+        {
+          "id": "514eed39-0c3e-4501-b552-a9497e52745a",
+          "filename": "manual.pdf",
+          "pages": 2,
+          "chunks": 2,
+          "created_at": "2026-09-07T00:41:45.633818"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/ask",
+      "status": 200,
+      "response": {
+        "answer": "The safety inspection occurs every Monday.",
+        "confidence": "medium",
+        "citations": [
+          {
+            "filename": "manual.pdf",
+            "page": 1,
+            "score": 0.226
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/debug/retrieval",
+      "status": 200,
+      "response": {
+        "query": "When does the safety inspection occur?",
+        "hits": [
+          {
+            "document_id": "514eed39-0c3e-4501-b552-a9497e52745a",
+            "filename": "manual.pdf",
+            "page": 1,
+            "chunk_index": 0,
+            "text": "Fictional warehouse manual - sample data only. The safety inspection occurs every Monday. Helmets are mandatory.",
+            "score": 0.22645540665096703
+          },
+          {
+            "document_id": "514eed39-0c3e-4501-b552-a9497e52745a",
+            "filename": "manual.pdf",
+            "page": 2,
+            "chunk_index": 0,
+            "text": "Emergency contact is the shift supervisor.",
+            "score": 0.16666667273196123
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/documents/514eed39-0c3e-4501-b552-a9497e52745a/reindex",
+      "status": 200,
+      "response": {
+        "id": "514eed39-0c3e-4501-b552-a9497e52745a",
+        "chunks": 2,
+        "status": "reindexed"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/ask",
+      "status": 200,
+      "response": {
+        "answer": "Insufficient evidence in the uploaded documents.",
+        "confidence": "low",
+        "citations": []
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/documents/514eed39-0c3e-4501-b552-a9497e52745a",
+      "status": 204,
+      "response": null
+    }
+  ]
+}

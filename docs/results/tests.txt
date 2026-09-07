@@ -1,0 +1,25 @@
+$ python -m pytest --cov=rag_assistant --cov-report=term-missing -q
+........                                                                 [100%]
+============================== warnings summary ===============================
+C:\Users\Home\portfolio-review-env\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\Home\portfolio-review-env\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+C:\Users\Home\portfolio-review-env\Lib\site-packages\starlette\testclient.py:53
+  C:\Users\Home\portfolio-review-env\Lib\site-packages\starlette\testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.12.6-final-0 _______________
+
+Name                            Stmts   Miss  Cover   Missing
+-------------------------------------------------------------
+src\rag_assistant\__init__.py       0      0   100%
+src\rag_assistant\config.py         9      0   100%
+src\rag_assistant\core.py          56      2    96%   59, 66
+src\rag_assistant\db.py            16      0   100%
+src\rag_assistant\main.py         101      7    93%   50, 61, 68, 112-113, 154, 158
+-------------------------------------------------------------
+TOTAL                             182      9    95%
+8 passed, 2 warnings in 32.33s
