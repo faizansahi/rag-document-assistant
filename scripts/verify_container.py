@@ -1,6 +1,5 @@
 """Verify a running container API using fictional/public fixtures."""
 
-import base64
 import json
 import time
 import urllib.error
@@ -49,52 +48,16 @@ def main():
             if attempt == 89:
                 raise
             time.sleep(1)
-    if ROOT.name == "ai-job-application-tracker":
-        job = request(
-            "POST",
-            "/jobs",
-            {
-                "title": "Container test",
-                "company": "Sample GmbH",
-                "description": "Python Docker PostgreSQL experience required",
-            },
-        )
-        application = request("POST", "/applications", {"job_id": job["id"]})
-        match = request(
-            "POST",
-            "/resume/analyze",
-            {"job_id": job["id"], "text": "Sample Python Docker experience"},
-        )
-        assert match["score"] == 66.7
-        request("PATCH", f"/applications/{application['id']}", {"stage": "Interview"})
-        assert request("GET", "/analytics")["average_match_score"] == 66.7
-    elif ROOT.name == "rag-document-assistant":
-        upload = request(
-            "POST",
-            "/documents",
-            file=("manual.pdf", "application/pdf", (ROOT / "docs/samples/manual.pdf").read_bytes()),
-        )
-        assert upload["pages"] == 2
-        answer = request("POST", "/ask", {"question": "When does the safety inspection occur?"})
-        assert "Monday" in answer["answer"] and answer["citations"][0]["page"] == 1
-        request("POST", f"/documents/{upload['id']}/reindex")
-        request("DELETE", f"/documents/{upload['id']}")
-    else:
-        result = request(
-            "POST",
-            "/analyze/frame",
-            file=(
-                "nasa-astronaut.png",
-                "image/png",
-                (ROOT / "docs/images/sample.png").read_bytes(),
-            ),
-        )
-        assert result["detections"] >= 1
-        assert any(e["type"] == "PERSON_IN_RESTRICTED_ZONE" for e in result["events"])
-        encoded = result.pop("annotated_jpeg_base64")
-        output = ROOT / "docs/results/docker-frame.jpg"
-        output.write_bytes(base64.b64decode(encoded))
-        assert request("GET", "/events")[0]["type"] == "PERSON_IN_RESTRICTED_ZONE"
+    upload = request(
+        "POST",
+        "/documents",
+        file=("manual.pdf", "application/pdf", (ROOT / "docs/samples/manual.pdf").read_bytes()),
+    )
+    assert upload["pages"] == 2
+    answer = request("POST", "/ask", {"question": "When does the safety inspection occur?"})
+    assert "Monday" in answer["answer"] and answer["citations"][0]["page"] == 1
+    request("POST", f"/documents/{upload['id']}/reindex")
+    request("DELETE", f"/documents/{upload['id']}")
     output = ROOT / "docs/results/docker-demo.json"
     output.write_text(
         json.dumps({"database": "PostgreSQL 16 via Compose", "requests": RECORDS}, indent=2) + "\n",

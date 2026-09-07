@@ -19,8 +19,6 @@ jobs:
   containers:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      ZONES_FILE: /app/config/zones.demo.json
     steps:
       - uses: actions/checkout@v4
       - name: Generate an ephemeral database password
@@ -41,7 +39,6 @@ jobs:
           name: container-evidence
           path: |
             docs/results/docker-demo.json
-            docs/results/docker-frame.jpg
           if-no-files-found: error
       - name: Container logs on failure
         if: failure()

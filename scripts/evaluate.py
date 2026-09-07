@@ -1,6 +1,7 @@
 """Upload an authored sample PDF to a running API and preserve cited answers."""
 
 import argparse
+import html
 import json
 from pathlib import Path
 
@@ -18,7 +19,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     sample.parent.mkdir(parents=True, exist_ok=True)
     pdf = canvas.Canvas(str(sample))
-    pdf.setTitle("Fictional warehouse manual - portfolio test fixture")
+    pdf.setTitle("Fictional warehouse manual - test fixture")
     pdf.drawString(50, 750, "Fictional warehouse manual - sample data only.")
     pdf.drawString(50, 710, "The safety inspection occurs every Monday. Helmets are mandatory.")
     pdf.showPage()
@@ -54,6 +55,24 @@ def main():
     (output / "demo.json").write_text(
         json.dumps({"question": question, "answer": answer, "workflow": records}, indent=2) + "\n"
     )
+    citation_rows = "".join(
+        f"<li>{html.escape(c['filename'])}, page {c['page']} (score {c['score']:.3f})</li>"
+        for c in answer["citations"]
+    )
+    report = f"""<!doctype html><html lang="en"><meta charset="utf-8">
+    <title>Document question and cited answer</title>
+    <style>body{{font:20px/1.6 system-ui;max-width:900px;margin:50px;color:#172b3a}}
+    h1{{font-size:30px}}blockquote{{border-left:4px solid #187c9a;padding:16px 24px;
+    background:#f1f6f8;margin:20px 0}}small{{color:#526673}}</style>
+    <h1>Document question and cited answer</h1>
+    <small>Recorded FastAPI response · authored sample PDF · extractive answer</small>
+    <p><strong>Question</strong><br>{html.escape(question)}</p>
+    <blockquote>{html.escape(answer["answer"])}</blockquote>
+    <h2>Sources returned by the API</h2><ul>{citation_rows}</ul>
+    <p>Upload: {upload["pages"]} pages, {upload["chunks"]} indexed chunks.</p>
+    <small>Generated from the same live execution as demo.json. This is a result report,
+    not an application interface or an accuracy evaluation.</small></html>"""
+    (output / "answer.html").write_text(report, encoding="utf-8")
     print(json.dumps({"question": question, "answer": answer, "steps": len(records)}, indent=2))
 
 
