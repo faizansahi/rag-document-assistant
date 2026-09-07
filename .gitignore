@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .coverage
+.coverage.*
 htmlcov/
 *.db
 qdrant_data/
@@ -13,3 +14,16 @@ uploads/
 .idea/
 .vscode/
 .DS_Store
+
+.env.*
+!.env.example
+*.log
+*.sqlite*
+build/
+dist/
+*.egg-info/
+.mypy_cache/
+.cache/
+models/
+
+!docs/samples/*.pdf

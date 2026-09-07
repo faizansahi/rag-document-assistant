@@ -24,6 +24,8 @@ class Chunk:
 
 
 def chunk_pages(pages: list[str], size: int = 900, overlap: int = 150) -> list[Chunk]:
+    if size <= 0 or overlap < 0 or overlap >= size:
+        raise ValueError("Require size > 0 and 0 <= overlap < size")
     chunks = []
     for page_number, text in enumerate(pages, 1):
         clean = re.sub(r"\s+", " ", text).strip()
@@ -40,26 +42,36 @@ def chunk_pages(pages: list[str], size: int = 900, overlap: int = 150) -> list[C
 
 
 def grounded_answer(question: str, hits: list[dict], threshold: float = 0.18) -> dict:
-    if not hits or hits[0]["score"] < threshold:
+    terms = set(re.findall(r"[\w-]{3,}", question.lower()))
+    sentences: list[str] = []
+    citations: list[dict] = []
+    scores: list[float] = []
+    for hit in sorted(hits, key=lambda item: item["score"], reverse=True):
+        if hit["score"] < threshold:
+            continue
+        candidates = re.split(r"(?<=[.!?])\s+", hit["text"])
+
+        def overlap(sentence: str) -> int:
+            return len(terms & set(re.findall(r"[\w-]{3,}", sentence.lower())))
+
+        best = max(candidates, key=overlap, default="")
+        if not best or not overlap(best) or best in sentences:
+            continue
+        sentences.append(best)
+        citations.append(
+            {"filename": hit["filename"], "page": hit["page"], "score": round(hit["score"], 3)}
+        )
+        scores.append(hit["score"])
+        if len(sentences) == 3:
+            break
+    if not sentences:
         return {
             "answer": "Insufficient evidence in the uploaded documents.",
             "confidence": "low",
             "citations": [],
         }
-    terms = set(re.findall(r"[\w-]{3,}", question.lower()))
-    sentences = []
-    for hit in hits:
-        candidates = re.split(r"(?<=[.!?])\s+", hit["text"])
-        best = max(
-            candidates, key=lambda sentence: len(terms & set(sentence.lower().split())), default=""
-        )
-        if best and best not in sentences:
-            sentences.append(best)
     return {
-        "answer": " ".join(sentences[:3]),
-        "confidence": "high" if hits[0]["score"] >= 0.35 else "medium",
-        "citations": [
-            {"filename": h["filename"], "page": h["page"], "score": round(h["score"], 3)}
-            for h in hits
-        ],
+        "answer": " ".join(sentences),
+        "confidence": "high" if min(scores) >= 0.35 else "medium",
+        "citations": citations,
     }

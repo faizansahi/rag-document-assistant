@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from reportlab.pdfgen import canvas
 
 from rag_assistant.core import chunk_pages, embed, grounded_answer
-from rag_assistant.main import COLLECTION, app, client, documents
+from rag_assistant.main import COLLECTION, app, client
 
 
 def pdf_bytes():
@@ -18,7 +18,6 @@ def pdf_bytes():
 
 
 def setup_function():
-    documents.clear()
     if client.collection_exists(COLLECTION):
         client.delete_collection(COLLECTION)
 

@@ -1,4 +1,0 @@
-chunk_size: 900
-chunk_overlap: 150
-top_k: 5
-evidence_threshold: 0.18

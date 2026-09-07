@@ -1,22 +1,25 @@
 import io
+import logging
 import os
 import uuid
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
 from qdrant_client import QdrantClient, models
 from sqlalchemy import select
 
+from .config import settings
 from .core import DIMENSIONS, chunk_pages, embed, grounded_answer
-from .db import DocumentRecord, Session
+from .db import Base, DocumentRecord, Session, engine
+
+LOG = logging.getLogger(__name__)
 
 COLLECTION = "document_chunks"
-client = QdrantClient(path=os.getenv("QDRANT_PATH", ":memory:"))
-documents: dict[str, dict] = {}
-UPLOAD_DIR = os.getenv("UPLOAD_DIR", "./uploads")
+client = QdrantClient(path=settings.qdrant_path)
+UPLOAD_DIR = settings.upload_dir
 
 
 class AskRequest(BaseModel):
@@ -34,6 +37,7 @@ def ensure_collection():
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    Base.metadata.create_all(engine)
     ensure_collection()
     yield
 
@@ -48,9 +52,11 @@ def health():
 
 @app.post("/documents", status_code=201)
 async def upload_document(file: UploadFile = File(...)):
-    if file.content_type != "application/pdf" and not file.filename.lower().endswith(".pdf"):
+    if file.content_type != "application/pdf" and not (file.filename or "").lower().endswith(
+        ".pdf"
+    ):
         raise HTTPException(415, "Only PDF documents are supported")
-    content = await file.read()
+    content = await file.read(20_000_001)
     if len(content) > 20_000_000:
         raise HTTPException(413, "PDF exceeds 20 MB")
     try:
@@ -81,7 +87,7 @@ async def upload_document(file: UploadFile = File(...)):
             )
         )
     client.upsert(COLLECTION, points=points, wait=True)
-    documents[document_id] = {
+    document = {
         "id": document_id,
         "filename": file.filename,
         "pages": len(pages),
@@ -97,7 +103,8 @@ async def upload_document(file: UploadFile = File(...)):
                 chunks=len(chunks),
             )
         )
-    return documents[document_id]
+    LOG.info("document_indexed id=%s pages=%s chunks=%s", document_id, len(pages), len(chunks))
+    return document
 
 
 @app.get("/documents")
@@ -134,7 +141,6 @@ def delete_document(document_id: str):
             )
         ),
     )
-    documents.pop(document_id, None)
     path = os.path.join(UPLOAD_DIR, f"{document_id}.pdf")
     if os.path.exists(path):
         os.remove(path)
@@ -193,9 +199,13 @@ def retrieve(question: str, limit: int) -> list[dict]:
 
 @app.post("/ask")
 def ask(payload: AskRequest):
-    return grounded_answer(payload.question, retrieve(payload.question, payload.limit))
+    return grounded_answer(
+        payload.question, retrieve(payload.question, payload.limit), settings.evidence_threshold
+    )
 
 
 @app.get("/debug/retrieval")
-def debug_retrieval(q: str, limit: int = 5):
+def debug_retrieval(
+    q: str = Query(min_length=3, max_length=2000), limit: int = Query(default=5, ge=1, le=20)
+):
     return {"query": q, "hits": retrieve(q, min(max(limit, 1), 20))}

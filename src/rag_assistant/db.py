@@ -1,8 +1,9 @@
-import os
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, Integer, String, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+
+from .config import settings
 
 
 class Base(DeclarativeBase):
@@ -20,9 +21,8 @@ class DocumentRecord(Base):
     )
 
 
-url = os.getenv("DATABASE_URL", "sqlite:///./rag.db")
+url = settings.database_url
 engine = create_engine(
     url, connect_args={"check_same_thread": False} if url.startswith("sqlite") else {}
 )
 Session = sessionmaker(engine, expire_on_commit=False)
-Base.metadata.create_all(engine)
