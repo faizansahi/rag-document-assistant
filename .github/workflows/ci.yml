@@ -1,13 +1,51 @@
 name: CI
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: "3.12"}
-      - run: pip install -e .[dev]
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: python -m pip check
       - run: ruff format --check .
       - run: ruff check .
       - run: pytest --cov=rag_assistant --cov-report=term-missing
+  containers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ZONES_FILE: /app/config/zones.demo.json
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate an ephemeral database password
+        shell: bash
+        run: |
+          portfolio_password="$(openssl rand -hex 24)"
+          echo "::add-mask::$portfolio_password"
+          echo "POSTGRES_PASSWORD=$portfolio_password" >> "$GITHUB_ENV"
+      - run: docker compose config --quiet
+      - run: docker compose build
+      - run: docker compose up -d --wait
+      - name: Live API workflow against PostgreSQL
+        run: python scripts/verify_container.py
+      - name: Confirm PostgreSQL backend
+        run: docker compose exec -T api python -c "from rag_assistant.db import engine; from sqlalchemy import text; assert engine.dialect.name == 'postgresql'; connection=engine.connect(); assert connection.scalar(text('SELECT 1')) == 1; print('PostgreSQL connection verified'); connection.close()"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: container-evidence
+          path: |
+            docs/results/docker-demo.json
+            docs/results/docker-frame.jpg
+          if-no-files-found: error
+      - name: Container logs on failure
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop isolated CI services
+        if: always()
+        run: docker compose down -v
