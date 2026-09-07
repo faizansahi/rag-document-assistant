@@ -1,7 +1,7 @@
 # Contributing
 
-Use a focused feature branch and clear conventional commits. Install the development dependencies from the README and run Ruff formatting, Ruff lint, Pytest, and `python -m pip check`.
+Install the development dependencies and run Ruff, Pytest, and `python -m pip check` before submitting changes. Include regression coverage for behavior changes and update the relevant API or data contract.
 
-Add regression coverage for changed behavior and document API or schema changes. Use public or fictional fixtures only. Do not commit credentials, personal CVs, workplace footage, model weights, database files, or local caches.
+Use authored PDFs. Changes to chunking, retrieval, or evidence filtering should cover both answerable and unsupported questions.
 
-Keep demonstrations reproducible. Distinguish mocked test inputs from real inference and label the database used for execution evidence. Update documentation when limitations change.
+Do not commit credentials, personal data, databases, model caches, or local logs.

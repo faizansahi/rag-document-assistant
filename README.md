@@ -1,151 +1,106 @@
 # RAG Document Assistant
 
-Upload PDFs and retrieve source-grounded answers with filename and page citations using a local Python API.
+Upload PDFs, retrieve relevant passages, and return extracted answers with page citations through FastAPI.
 
-![Real running Swagger interface](docs/images/swagger.png)
+![Actual question, extracted answer, and source citation](docs/images/rag-answer.png)
 
-![Python](https://img.shields.io/badge/Python-demonstrated-187c9a) ![FastAPI](https://img.shields.io/badge/FastAPI-demonstrated-187c9a) ![Qdrant](https://img.shields.io/badge/Qdrant-demonstrated-187c9a) ![Pytest](https://img.shields.io/badge/Pytest-demonstrated-187c9a)
 [![CI](https://github.com/faizansahi/rag-document-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/faizansahi/rag-document-assistant/actions/workflows/ci.yml)
 
-## Overview
+The image is a report rendered from a live API response. The two-page sample manual
+says that inspections happen on Monday; the answer cites that sentence on page 1.
+The [complete execution record](docs/results/demo.json) includes upload, indexing,
+retrieval, reindexing, an unsupported question, and deletion.
 
-A local retrieval and extractive question-answering baseline. It implements PDF ingestion, chunking, deterministic hashed embeddings, vector search, and evidence filtering.
+## Retrieval before generation
 
-## Business Problem
+This implementation is an offline retrieval baseline. It uses hashed token vectors
+and extractive sentence selection, not a learned embedding model or generative LLM.
 
-Finding an answer in a document is useful only if the reader can inspect the supporting source and recognize when evidence is missing.
-
-## Solution
-
-Preserve PDF page numbers, index text chunks in Qdrant, retrieve scored candidates, and construct answers only from qualifying source sentences.
-
-## Key Features
-
-- Upload, list, delete, and reindex text-bearing PDFs.
-- Use 384-dimensional hashed token embeddings with normalized cosine search.
-- Preserve filename, page, chunk index, and document ID with each vector.
-- Filter weak hits before answer construction and return explicit insufficient-evidence responses.
-- Persist PDF files, SQL metadata, and local Qdrant data.
-
-## Architecture
-
-```mermaid
+~~~mermaid
 flowchart LR
-  PDF[Sample PDF] --> Parse[pypdf pages]
-  Parse --> Chunk[900-character chunks / 150 overlap]
-  Chunk --> Embed[384-dimensional token hashing]
-  Embed --> Q[(Qdrant)]
-  Parse --> SQL[(Document metadata)]
-  Ask[Question] --> Embed
-  Q --> Hits[Scored retrieval]
-  Hits --> Gate[Evidence and term overlap filter]
-  Gate --> Answer[Extracted answer and page citations]
-```
+  PDF --> Pages[pypdf pages]
+  Pages --> Chunks[900 characters / 150 overlap]
+  Chunks --> Vectors[384-dimensional token hashes]
+  Vectors --> Q[(Local Qdrant)]
+  Question --> Vectors
+  Q --> Filter[Score and term-overlap filter]
+  Filter --> Answer[Source sentences and page citations]
+~~~
 
-[Architecture details](docs/architecture.md) · [Engineering decisions](docs/decisions.md)
+Chunks stay within page boundaries so citations retain a useful page reference.
+Normalized, signed token hashes provide deterministic lexical vectors for cosine
+search. Hash collisions are possible, and paraphrases without shared terms can fail.
 
-## Technology Stack
+Retrieval hits below `EVIDENCE_THRESHOLD` (default 0.18) are discarded. The answer
+builder selects up to three distinct source sentences with question-term overlap
+and includes citations only for the passages it uses. If no sentence qualifies, it returns:
 
-Python 3.12, FastAPI, pypdf, Qdrant, SQLAlchemy, PostgreSQL/SQLite, Pydantic Settings, ReportLab demo fixtures, Docker Compose, Pytest, Ruff, and GitHub Actions.
+> Insufficient evidence in the uploaded documents.
 
-## Demo / Results
+The threshold and confidence bands are heuristics, not correctness probabilities.
 
-The live API uploaded a **2-page sample PDF**, created **2 chunks**, retrieved evidence, answered “The safety inspection occurs every Monday.” with a **manual.pdf, page 1** citation, reindexed, refused an unrelated query, and deleted the document. The screenshot above is the running Swagger interface; the full request workflow is saved as JSON.
+## Try the sample
 
-[Actual output](docs/results/demo.json) · [PostgreSQL container results](docs/results/docker-demo.json) · [Test report](docs/results/tests.txt) · [Provenance](docs/results/provenance.md) · [Verification status](docs/results/verification.md)
+Use Python 3.12+ in an activated virtual environment.
 
-Reproduce using a fresh local database and a running API:
-
-```bash
-python scripts/evaluate.py
-```
-
-## Installation
-
-Requires Python 3.12+. From this repository:
-
-```bash
-python -m venv .venv
-# Linux/macOS: source .venv/bin/activate
-# Windows PowerShell: .venv\Scripts\Activate.ps1
+~~~bash
 python -m pip install -e ".[dev]"
 uvicorn rag_assistant.main:app --reload
-```
+~~~
 
-Open `http://localhost:8000/docs`. With no environment file, the API uses SQLite. See [setup](docs/setup.md).
+In another terminal:
 
-## Docker Setup
+~~~bash
+python scripts/evaluate.py
+~~~
 
-Copy `.env.example` to `.env`, set a unique URL-safe `POSTGRES_PASSWORD`, then run:
+This creates an authored PDF, uploads it to the running server, checks the cited
+answer and insufficient-evidence response, reindexes, then deletes the document.
+The PDF, JSON responses, and an HTML answer report are saved under `docs/`.
+Use a fresh database/vector directory when reproducing the demo.
 
-```bash
-docker compose up --build
-```
+For your own non-sensitive PDF:
 
-Compose supplies PostgreSQL and persistent storage. The API binds to localhost port 8000; run one project's stack at a time. Docker was unavailable on the local Windows review machine; [verification status](docs/results/verification.md) records separate container checks.
-
-## Environment Variables
-
-| Variable | Default / requirement | Purpose |
-|---|---|---|
-| `DATABASE_URL` | `sqlite:///./rag.db` | Metadata database |
-| `QDRANT_PATH` | `./qdrant_data` | Local vector-store directory |
-| `UPLOAD_DIR` | `./uploads` | Original PDF storage |
-| `EVIDENCE_THRESHOLD` | `0.18` | Minimum candidate cosine score |
-| `POSTGRES_PASSWORD` | Required for Compose | Local database password |
-
-The app reads `.env`. Compose overrides the database URL with its internal PostgreSQL address. Keep real values out of Git.
-
-## API Usage
-
-Use Swagger or the following examples:
-
-```bash
-curl -X POST http://localhost:8000/documents -F "file=@docs/samples/manual.pdf"
+~~~bash
+curl -X POST http://localhost:8000/documents -F "file=@manual.pdf"
 curl -X POST http://localhost:8000/ask -H "Content-Type: application/json" -d '{"question":"When does the safety inspection occur?"}'
-```
+~~~
 
-[API / data contracts](docs/api.md).
+[Swagger](http://localhost:8000/docs) exposes document listing/deletion, reindexing,
+and scored retrieval debugging. Uploads are limited to 20 MB.
 
-## Tests
+## Storage and deployment
 
-```bash
-ruff format --check .
+SQLAlchemy stores document metadata, Qdrant stores vectors and page text, and the
+filesystem retains original PDFs for reindexing. Local defaults are SQLite,
+`qdrant_data/`, and `uploads/`; settings can be changed through `.env`.
+
+For PostgreSQL, copy `.env.example` to `.env`, set a unique URL-safe
+`POSTGRES_PASSWORD`, then run `docker compose up --build`.
+Use one API worker: embedded Qdrant locks its data directory.
+Back up metadata, vectors, and source files together.
+
+Python, FastAPI, pypdf, NumPy, Qdrant, and SQLAlchemy form the application.
+ReportLab generates the test PDF; it is not part of document parsing.
+
+## Tests and boundaries
+
+~~~bash
 ruff check .
+ruff format --check .
 pytest --cov=rag_assistant --cov-report=term-missing
 python -m pip check
-```
+~~~
 
-The recorded Windows run passed **8 tests** with **95% statement coverage**. Coverage describes this suite, not complete correctness.  GitHub Actions runs quality and container checks; its badge reports the current status.
+Tests exercise chunk overlap, evidence filtering, upload validation, citations,
+reindexing, deletion, and isolated local stores. CI also builds and runs the container
+workflow with PostgreSQL metadata. [Executed checks](docs/results/verification.md)
+and [test output](docs/results/tests.txt) are recorded separately from the demo.
 
-## Project Structure
+There is no OCR, authentication, semantic retrieval evaluation, or transaction spanning
+the three stores. Interrupted ingestion can need cleanup. The sample proves the workflow,
+not broad answer quality. Next work should add an evaluated question set and ingestion
+recovery before swapping in learned embeddings or an LLM.
 
-```text
-src/rag_assistant/     Application and domain logic
-tests/                  Unit and integration tests
-scripts/                Reproducible demos and clients
-docs/                   Architecture, setup, API, decisions
-docs/images/            Real screenshots and output visuals
-docs/results/           Execution and test evidence
-.github/workflows/      Automated checks
-```
-
-## Engineering Decisions
-
-Hashed token vectors offer a deterministic, offline baseline. They represent lexical overlap rather than learned semantic meaning. Extractive answers expose their source; the score threshold and confidence labels are heuristics, not calibrated correctness probabilities.
-
-## Limitations
-
-There is no generative LLM, OCR, authentication, or evaluated semantic embedding model. Hash collisions and irrelevant shared terms can produce poor retrieval. The three stores are not transactionally coordinated; interrupted ingestion/reindexing can require cleanup. Local Qdrant requires a single process/worker. The evidence filter cannot guarantee answer correctness.
-
-## Future Improvements
-
-Evaluate retrieval on a labeled question set, add learned multilingual embeddings, coordinate ingestion recovery, and support authenticated document ownership.
-
-## Skills Demonstrated
-
-Python, Artificial Intelligence application design, RAG, Embeddings, Vector Database integration, retrieval, document parsing, REST API, SQL, Docker, Git, Pytest, and CI/CD checks.
-
-## Relevance for German Werkstudent Roles
-
-Relevant to Werkstudent AI and Backend Development roles: it makes retrieval behavior inspectable and tests source attribution, validation, persistence, and refusal behavior.
+[API](docs/api.md) · [Configuration](docs/setup.md) ·
+[Retrieval decisions](docs/decisions.md) · [Sample provenance](docs/results/provenance.md)

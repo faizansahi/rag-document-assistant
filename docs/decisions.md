@@ -1,17 +1,9 @@
-# Engineering decisions
+# Retrieval decisions
 
-## Accepted baseline
+PDF pages are split into 900-character windows with 150-character overlap. Page boundaries are retained for citations. Character cuts can split sentences; there is no layout-aware table handling.
 
-Hashed token vectors offer a deterministic, offline baseline. They represent lexical overlap rather than learned semantic meaning. Extractive answers expose their source; the score threshold and confidence labels are heuristics, not calibrated correctness probabilities.
+Normalized signed token hashes produce 384-dimensional vectors for cosine search in Qdrant. This offline lexical baseline needs no trained model but can miss paraphrases and suffer hash collisions.
 
-## Testing strategy
+Hits below the configured threshold (0.18 by default) are filtered individually. The answer builder selects up to three distinct source sentences with question-term overlap and cites only used passages. Confidence bands are heuristics, not accuracy probabilities. No qualifying sentence means an insufficient-evidence answer.
 
-Keep deterministic domain tests separate from HTTP/database integration and real model demos. Unit-test stubs are never presented as model evidence. Capture actual responses and preserve the commands needed to reproduce them.
-
-## Tradeoffs
-
-There is no generative LLM, OCR, authentication, or evaluated semantic embedding model. Hash collisions and irrelevant shared terms can produce poor retrieval. The three stores are not transactionally coordinated; interrupted ingestion/reindexing can require cleanup. Local Qdrant requires a single process/worker. The evidence filter cannot guarantee answer correctness.
-
-## Next steps
-
-Evaluate retrieval on a labeled question set, add learned multilingual embeddings, coordinate ingestion recovery, and support authenticated document ownership.
+SQL metadata, local Qdrant, and original PDFs are separate stores. They must be backed up together. A failure between writes can leave partial state, and reindexing needs the source PDF. Local Qdrant requires one process. Recovery and a labeled question set should precede broader deployment.

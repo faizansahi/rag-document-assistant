@@ -1,1 +1,1 @@
-$ python -m compileall -q src scripts tests\n
+$ python -m compileall -q src scripts tests

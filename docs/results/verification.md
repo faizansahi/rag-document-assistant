@@ -1,15 +1,17 @@
-# Verification status
+# Executed checks
 
-Local Windows execution on 7 September 2026 passed 8 tests with 95% statement coverage. Ruff lint, formatting, and source compilation passed. Raw reports are in this directory.
+On 7 September 2026, Python 3.12.6 on Windows passed **8 tests** with
+**95% statement coverage**. Ruff lint, formatting checks, dependency resolution,
+`pip check`, and source compilation passed. The API demos import and run the application;
+compilation alone is not a runtime import test.
 
-The live API uploaded a **2-page sample PDF**, created **2 chunks**, retrieved evidence, answered “The safety inspection occurs every Monday.” with a **manual.pdf, page 1** citation, reindexed, refused an unrelated query, and deleted the document. The screenshot above is the running Swagger interface; the full request workflow is saved as JSON.
+Uploaded the authored two-page PDF, indexed two chunks, retrieved passages, answered with a page-1 citation, reindexed, returned no citations for an unrelated question, and deleted the document. The answer image captures a report rendered from these responses.
 
-Docker was unavailable on the local Windows machine. Docker Compose and PostgreSQL 16 were verified successfully on a GitHub-hosted Ubuntu runner.
+[Actual local responses](demo.json) · [Test report](tests.txt) · [Check exit codes](checks.json)
 
-[Successful CI run 34070962688](https://github.com/faizansahi/rag-document-assistant/actions/runs/34070962688) passed both the quality and containers jobs. The run includes dependency resolution, lint, formatting, tests, Compose validation, image build, container execution, and PostgreSQL checks.
+Absolute virtual-environment paths in reports are replaced with `<venv>` for portability.
+The test report retains upstream FastAPI/Starlette deprecation warnings.
 
-The container uploaded the authored PDF, indexed it, returned a cited answer, reindexed, and deleted it using PostgreSQL metadata and local Qdrant.
-
-[Downloaded container execution artifact](docker-demo.json) preserves the actual results from that run. These artifacts are separate from the local SQLite demo.
-
-The test output retains upstream Starlette/httpx deprecation warnings; no tests were skipped because of them.
+Docker is unavailable on the local Windows machine. Container checks run separately
+on GitHub-hosted Ubuntu with PostgreSQL 16. The current workflow is linked from the README;
+the final container evidence is recorded below after its run completes.

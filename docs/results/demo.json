@@ -17,11 +17,11 @@
       "path": "/documents",
       "status": 201,
       "response": {
-        "id": "514eed39-0c3e-4501-b552-a9497e52745a",
+        "id": "1bacb6cf-91b6-4981-bea7-3d50c63e6f8e",
         "filename": "manual.pdf",
         "pages": 2,
         "chunks": 2,
-        "created_at": "2026-09-07T00:41:45.633818+00:00"
+        "created_at": "2026-09-07T01:30:18.147425+00:00"
       }
     },
     {
@@ -30,11 +30,11 @@
       "status": 200,
       "response": [
         {
-          "id": "514eed39-0c3e-4501-b552-a9497e52745a",
+          "id": "1bacb6cf-91b6-4981-bea7-3d50c63e6f8e",
           "filename": "manual.pdf",
           "pages": 2,
           "chunks": 2,
-          "created_at": "2026-09-07T00:41:45.633818"
+          "created_at": "2026-09-07T01:30:18.151414"
         }
       ]
     },
@@ -62,7 +62,7 @@
         "query": "When does the safety inspection occur?",
         "hits": [
           {
-            "document_id": "514eed39-0c3e-4501-b552-a9497e52745a",
+            "document_id": "1bacb6cf-91b6-4981-bea7-3d50c63e6f8e",
             "filename": "manual.pdf",
             "page": 1,
             "chunk_index": 0,
@@ -70,7 +70,7 @@
             "score": 0.22645540665096703
           },
           {
-            "document_id": "514eed39-0c3e-4501-b552-a9497e52745a",
+            "document_id": "1bacb6cf-91b6-4981-bea7-3d50c63e6f8e",
             "filename": "manual.pdf",
             "page": 2,
             "chunk_index": 0,
@@ -82,10 +82,10 @@
     },
     {
       "method": "POST",
-      "path": "/documents/514eed39-0c3e-4501-b552-a9497e52745a/reindex",
+      "path": "/documents/1bacb6cf-91b6-4981-bea7-3d50c63e6f8e/reindex",
       "status": 200,
       "response": {
-        "id": "514eed39-0c3e-4501-b552-a9497e52745a",
+        "id": "1bacb6cf-91b6-4981-bea7-3d50c63e6f8e",
         "chunks": 2,
         "status": "reindexed"
       }
@@ -102,7 +102,7 @@
     },
     {
       "method": "DELETE",
-      "path": "/documents/514eed39-0c3e-4501-b552-a9497e52745a",
+      "path": "/documents/1bacb6cf-91b6-4981-bea7-3d50c63e6f8e",
       "status": 204,
       "response": null
     }

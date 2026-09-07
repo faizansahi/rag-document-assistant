@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Add reproducible execution evidence, real visuals, and recruiter-facing documentation.
+- Replace template documentation with project-specific explanations and result visuals.
+
+- Add reproducible execution evidence, real visuals, and technical documentation.
 - Fix validation, configuration, and persistence issues found during review.
 - Add regression and integration coverage and isolated test-store cleanup.
 - Replace embedded Compose passwords with required local environment values.

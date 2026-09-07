@@ -1,2 +1,5 @@
-# Security Policy
-Report vulnerabilities privately through GitHub Security Advisories. Uploaded documents may be confidential; never attach real documents or credentials to public issues.
+# Security
+
+Do not include credentials or private data in public issues. Use GitHub private vulnerability reporting when available; otherwise request a private contact channel without publishing exploit details.
+
+The application has no authentication. Keep it local unless access controls are added.
