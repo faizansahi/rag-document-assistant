@@ -1,0 +1,58 @@
+{
+  "database": "PostgreSQL 16 via Compose",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 200,
+      "response": {
+        "status": "ok",
+        "vector_store": "qdrant"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/documents",
+      "status": 201,
+      "response": {
+        "id": "1440cf3b-c82c-4e23-ad8d-8d1801d0e0c3",
+        "filename": "manual.pdf",
+        "pages": 2,
+        "chunks": 2,
+        "created_at": "2026-09-07T00:48:53.145057+00:00"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/ask",
+      "status": 200,
+      "response": {
+        "answer": "The safety inspection occurs every Monday.",
+        "confidence": "medium",
+        "citations": [
+          {
+            "filename": "manual.pdf",
+            "page": 1,
+            "score": 0.226
+          }
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/documents/1440cf3b-c82c-4e23-ad8d-8d1801d0e0c3/reindex",
+      "status": 200,
+      "response": {
+        "id": "1440cf3b-c82c-4e23-ad8d-8d1801d0e0c3",
+        "chunks": 2,
+        "status": "reindexed"
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/documents/1440cf3b-c82c-4e23-ad8d-8d1801d0e0c3",
+      "status": 204,
+      "response": null
+    }
+  ]
+}

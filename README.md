@@ -52,7 +52,7 @@ Python 3.12, FastAPI, pypdf, Qdrant, SQLAlchemy, PostgreSQL/SQLite, Pydantic Set
 
 The live API uploaded a **2-page sample PDF**, created **2 chunks**, retrieved evidence, answered “The safety inspection occurs every Monday.” with a **manual.pdf, page 1** citation, reindexed, refused an unrelated query, and deleted the document. The screenshot above is the running Swagger interface; the full request workflow is saved as JSON.
 
-[Actual output](docs/results/demo.json) · [Test report](docs/results/tests.txt) · [Provenance](docs/results/provenance.md) · [Verification status](docs/results/verification.md)
+[Actual output](docs/results/demo.json) · [PostgreSQL container results](docs/results/docker-demo.json) · [Test report](docs/results/tests.txt) · [Provenance](docs/results/provenance.md) · [Verification status](docs/results/verification.md)
 
 Reproduce using a fresh local database and a running API:
 
